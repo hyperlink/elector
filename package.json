@@ -1,0 +1,51 @@
+{
+  "name": "elector",
+  "version": "0.0.0-development",
+  "description": "simple zookeeper based leader election",
+  "main": "index.js",
+  "scripts": {
+    "test": "standard && docker-compose up -d && mocha",
+    "format": "prettier-standard '*.js'",
+    "semantic-release": "semantic-release pre && npm publish && semantic-release post"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hyperlink/elector.git"
+  },
+  "keywords": [
+    "zookeeper",
+    "leadership",
+    "election"
+  ],
+  "engines": {
+    "node": ">6.0.0"
+  },
+  "author": "Xiaoxin Lu <javascript@yahoo.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/hyperlink/elector/issues"
+  },
+  "homepage": "https://github.com/hyperlink/elector#readme",
+  "dependencies": {
+    "async": "^2.4.1",
+    "debug": "^2.6.8",
+    "lodash": "^4.17.4",
+    "node-zookeeper-client": "^0.2.2"
+  },
+  "devDependencies": {
+    "husky": "^0.13.4",
+    "lint-staged": "^3.6.1",
+    "mocha": "^3.4.2",
+    "prettier-standard": "^5.1.0",
+    "semantic-release": "^6.3.6",
+    "standard": "^10.0.2"
+  },
+  "lint-staged": {
+    "linters": {
+      "src/**/*.js": [
+        "prettier-standard",
+        "git add"
+      ]
+    }
+  }
+}
