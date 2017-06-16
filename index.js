@@ -114,7 +114,7 @@ class Elector extends EventEmitter {
     )
   }
 
-  disconnect () {
+  disconnect (callback) {
     debug('disconnecting')
     this.disconnecting = true
     this.client.remove(`${this.electionPath}/${this.id}`, error => {
@@ -122,8 +122,10 @@ class Elector extends EventEmitter {
         this.client.close()
       }
       if (error) {
-        return debug(error)
+        debug(error)
+        return callback(error)
       }
+      callback(null)
     })
   }
 }

@@ -8,14 +8,27 @@ const _ = require('lodash')
 const assert = require('assert')
 const uuid = require('uuid')
 const zookeeper = require('node-zookeeper-client')
+const listeners = ['leader', 'follower']
 
 describe('Elector', function () {
   let electors = []
 
-  afterEach(function () {
-    for (let elector of electors) {
-      elector.disconnect()
-    }
+  afterEach(function (done) {
+    async.each(
+      electors,
+      function (elector, callback) {
+        elector.removeAllListeners(listeners)
+        if (elector.disconnecting) {
+          return callback(null)
+        }
+
+        elector.disconnect(callback)
+        if (!elector.ownsClient) {
+          elector.client.close()
+        }
+      },
+      done
+    )
   })
 
   it('should elect one node out of the five as leader', function (done) {
@@ -31,6 +44,59 @@ describe('Elector', function () {
       assert.equal(followers.length, 4)
       done(error)
     })
+  })
+
+  it('should still have one leader after some nodes leave', function (done) {
+    electors = _.times(5, createElector)
+
+    assert(electors.length, 5)
+
+    const leaders = []
+    const followers = []
+
+    async.series(
+      [
+        function (callback) {
+          connectAndListen(electors, leaders, followers, function (error) {
+            assert.equal(leaders.length, 1)
+            assert.equal(followers.length, 4)
+            callback(error)
+          })
+        },
+
+        function (callback) {
+          const disconnectNodes = _.sampleSize(electors, 2)
+          async.each(
+            disconnectNodes,
+            function (elector, callback) {
+              elector.removeAllListeners(listeners)
+              elector.disconnect(callback)
+            },
+            callback
+          )
+        }
+      ],
+      function () {
+        let leaders = 0
+        let followers = 0
+        let disconnected = 0
+        for (let elector of electors) {
+          if (elector.isLeader) {
+            leaders++
+          } else {
+            followers++
+          }
+          if (elector.disconnecting) {
+            disconnected++
+          }
+        }
+
+        assert.equal(leaders, 1)
+        assert.equal(followers, 4)
+        assert.equal(disconnected, 2)
+        done()
+      }
+    )
   })
 
   it('should take an existing zookeeper client', function (done) {
@@ -70,8 +136,8 @@ function connectAndListen (electors, leaders, followers, callback) {
         }
         callback(null)
       }
-      elector.on('leader', cb)
-      elector.on('follower', cb)
+      elector.once('leader', cb)
+      elector.once('follower', cb)
       elector.on('error', callback)
     },
     callback
