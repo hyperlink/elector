@@ -23,20 +23,23 @@ const Elector = require('elector')
 
 const elector = new Elector({host: 'localhost:2818'})
 
+// alternatively pass in zookeeper client
+// const elector = new Elector(new zookeeper.createClient('localhost:2818'))
+
 // connects to zookeeper and starts the election process
 elector.connect()
 
 elector.on('leader', function () {
-	console.log('I am the supreme leader worship me!');
+	console.log('I am the supreme leader worship me!')
 })
 
 elector.on('follower', function () {
-	console.log('I am but a lowly follower :(');
+	console.log('I am but a lowly follower :(')
 })
 
 // leave the election and closes zookeeper connection
-elector.leave();
-
+// do this to leave the election quickly
+// elector.disconnect()
 ```
 
 

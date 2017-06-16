@@ -11,12 +11,24 @@ class Elector extends EventEmitter {
     super()
     this.id = null
     this.electionPath = electionPath
-    this.client = zookeeper.createClient(zkOptions.host)
+
+    if (this._isZkClient(zkOptions)) {
+      this.client = zkOptions
+    } else {
+      this.client = zookeeper.createClient(zkOptions.host)
+      this.ownsClient = true
+    }
     this.client.once('connected', () => this._onConnect())
   }
 
   connect () {
     this.client.connect()
+  }
+
+  _isZkClient (client) {
+    return (
+      _.isObject(client) && 'connectionManager' in client && 'close' in client
+    )
   }
 
   _onConnect () {
@@ -106,7 +118,9 @@ class Elector extends EventEmitter {
     debug('disconnecting')
     this.disconnecting = true
     this.client.remove(`${this.electionPath}/${this.id}`, error => {
-      this.client.close()
+      if (this.ownsClient) {
+        this.client.close()
+      }
       if (error) {
         return debug(error)
       }

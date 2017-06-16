@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "standard && docker-compose up -d && mocha",
-    "format": "prettier-standard '*.js'",
+    "format": "prettier-standard '*.js' 'test/*js'",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
   "repository": {
@@ -42,7 +42,7 @@
   },
   "lint-staged": {
     "linters": {
-      "src/**/*.js": [
+      "**/*.js": [
         "prettier-standard",
         "git add"
       ]
