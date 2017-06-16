@@ -8,6 +8,7 @@
     "format": "prettier-standard '*.js' 'test/*js'",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
   },
+  "files": ["index.js"],
   "repository": {
     "type": "git",
     "url": "https://github.com/hyperlink/elector.git"
