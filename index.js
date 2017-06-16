@@ -56,21 +56,56 @@ class Elector extends EventEmitter {
           debug('my candidateId is', this.id)
           this.emit('candidateId', this.id)
           this._listCandidates(callback)
-        }
+        },
+
+        (candidates, callback) =>
+          this._watchSiblingCandidateIf(candidates, callback)
       ],
       (error, candidates) => {
         if (error) {
           return console.error(error)
         }
-        debug('received candidates', candidates)
+        debug('%s received candidates %j', this.id, candidates)
         this._pickLeader(candidates)
       }
     )
   }
 
+  _watchSiblingCandidateIf (candidates, callback) {
+    this.candidates = candidates.sort()
+    this.watchingCandidate = candidates[candidates.indexOf(this.id) - 1]
+
+    if (this.watchingCandidate) {
+      const watchPath = `${this.electionPath}/${this.watchingCandidate}`
+
+      debug(`${this.id} watching for changes to "${watchPath}"`)
+
+      this.client.exists(
+        watchPath,
+        event => this._onCandidateChange(event),
+        (error, stat) => {
+          if (error) {
+            return callback(error)
+          }
+          if (!stat) {
+            return callback(
+              new Error(
+                `${this.id} sibling node "${watchPath}" does not exist!`
+              )
+            )
+          }
+          callback(null, this.candidates)
+        }
+      )
+      return
+    }
+    debug('%s I got no sibling candidates to watch. Am I the leader?', this.id)
+    callback(null, this.candidates)
+  }
+
   _pickLeader (candidates) {
     const previousLeadershipState = this.isLeader
-    this.isLeader = _.first(candidates.sort()) === this.id
+    this.isLeader = _.first(candidates) === this.id
 
     if (previousLeadershipState !== this.isLeader) {
       if (this.isLeader) {
@@ -87,35 +122,61 @@ class Elector extends EventEmitter {
 
   _onCandidateChange (event) {
     if (this.disconnecting) {
+      debug(
+        '%s is disconnecting ignoring watch event from %s',
+        this.id,
+        this.watchingCandidate
+      )
       return
     }
+    debug('%s received change event %j', this.id, event)
 
     this._listCandidates((error, candidates) => {
+      if (this.disconnecting) {
+        debug('%s in disconnecting state after _listCandidates', this.id)
+        return
+      }
+
       if (error) {
         debug(error)
         this.emit('error', error)
         return
       }
-      debug('new candidates', candidates)
-      this._pickLeader(candidates)
+
+      debug('%s received new candidates %j', this.id, candidates)
+
+      this._watchSiblingCandidateIf(candidates, (error, candidates) => {
+        if (this.disconnecting) {
+          debug(
+            '%s in disconnecting state after _watchSiblingCandidateIf',
+            this.id
+          )
+          return
+        }
+        if (error) {
+          debug(error)
+          return this.emit(error)
+        }
+        this._pickLeader(candidates)
+      })
     })
   }
 
   _listCandidates (callback) {
-    this.client.getChildren(
-      this.electionPath,
-      event => this._onCandidateChange(event),
-      (error, candidates, stats) => {
-        if (error) {
-          return callback(error)
-        }
-        callback(null, candidates)
+    this.client.getChildren(this.electionPath, function (
+      error,
+      candidates,
+      stats
+    ) {
+      if (error) {
+        return callback(error)
       }
-    )
+      callback(null, candidates)
+    })
   }
 
   disconnect (callback) {
-    debug('disconnecting')
+    debug('%s disconnecting', this.id)
     this.disconnecting = true
     this.client.remove(`${this.electionPath}/${this.id}`, error => {
       if (this.ownsClient) {
