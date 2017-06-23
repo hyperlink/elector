@@ -4,6 +4,7 @@
   "description": "simple zookeeper based leader election",
   "main": "index.js",
   "scripts": {
+    "precommit": "lint-staged",
     "test": "standard && docker-compose up -d && mocha",
     "format": "prettier-standard '*.js' 'test/*js'",
     "semantic-release": "semantic-release pre && npm publish && semantic-release post"
