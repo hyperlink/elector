@@ -30,7 +30,7 @@
   "homepage": "https://github.com/hyperlink/elector#readme",
   "dependencies": {
     "async": "^2.4.1",
-    "debug": "^2.6.8",
+    "debug": "^3.0.0",
     "lodash": "^4.17.4",
     "node-zookeeper-client": "^0.2.2"
   },
