@@ -32,7 +32,7 @@
     "async": "^2.6.0",
     "debug": "^4.0.0",
     "lodash": "^4.17.4",
-    "node-zookeeper-client": "^0.2.2"
+    "node-zookeeper-client": "^1.0.0"
   },
   "devDependencies": {
     "husky": "^1.0.0",
